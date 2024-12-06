@@ -1,8 +1,14 @@
-# 16S rRNA sequencing data analysis
+# $${\color{red}16S \space rRNA \space sequencing \space data \space analysis}$$
 
-## For non-original data:
-(skip to pipeline for local sequencing data)
-
+## $${\color{orange}Data \space Setup}$$
+- create directory to work in, name this folder after your data
+- Change "XXX" to unique file name for dataset
+```bash
+mkdir XXX
+cd XXX
+```
+- move local .fastq files, **silvamod138.fasta**, **filter_seq_by_OTUtable.py**, and **LULU.R** to the working directory
+- for sequenced from published articles 
 ### download data from NCBI/ENA archives
 ```
 fasterq-dump SRRXXXXXXXXXX SRRXXXXXXXX ....
@@ -11,29 +17,23 @@ fasterq-dump SRRXXXXXXXXXX SRRXXXXXXXX ....
 ```
 gunzip *.gz	
 ```
----
-## FastQC
-- open fastq files in FastQC to check quality and at what length quality deteriorates to determine the length to trim. (if using downloaded data check for adapter content and add to cutadapt if additional adapters need removed)
-## Setup 
-- create directory to work in, name this folder after your data
-```bash
-mkdir XXX
-cd XXX
-```
-- move fastq files, **silvamod138.fasta**, **filter_seq_by_OTUtable.py**, and **LULU.R** to the working directory
-- For raw sequences pulled from NELS CGB5 and blank from CGB6(tag 70)
+- For local raw sequences pulled from NELS CGB5 and blank from CGB6(tag 70)
 converted bam to fastq
 ```bash
 ls *bam | parallel -j 2 "samtools fastq {} > {.}.fastq"
 ```
-# Pipeline
+---
+## $${\color{orange}FastQC}$$
+- open fastq files in FastQC to check quality and at what length quality deteriorates to determine the length to trim. (if using downloaded data check for adapter content and add to cutadapt if additional adapters need removed)
+
+# $${\color{red}Pipeline}$$
 VSEARCH pipeline reference
 https://github.com/torognes/vsearch/wiki/Alternative-VSEARCH-pipeline
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5075697/
 _______________________________________________________________________
 Open python terminal to run script
 ________________________________________________________________________
-# START OF PIPELINE
+## $${\color{orange}START \space OF \space PIPELINE}$$
 ``` bash
 conda activate pipeline16s
 
@@ -48,9 +48,9 @@ for f in *.fastq; do
  awk '{s++}END{print s/4}' $f  
 done
 ```
-### Remove primers 
+### $${\color{Lightgreen}Remove \space primers}$$
 Change forward primer to the primer sequence used. 
-#### Trim forward primers
+#### $${\color{lightblue}Primer pairss}$$
 Jørgensen and Zhao: V4
 F: 519f (5′-CAGCMGCCGCGGTAA-3')
 R: 805r (5′-GACTACHVGGGTATCTAATCC-3')
@@ -116,7 +116,7 @@ for f in 2-*.fastq; do
 done
 ```
 ---
-### Trim the sequences at 220bp.  
+### $${\color{lightgreen}Trim \space the \space sequences \space at \space 220bp}$$
  This can be shortened or lengthened based on what you saw in FastQC. 220 is a good length usually. 
 ``` bash
  
@@ -142,7 +142,7 @@ done
 
 ```
 ---
-### Quality filtering at maxee = 2.
+### $${\color{lightgreen}Quality \space filtering \space at \space maxee \space = \space 2}$$
  This sets the maximum errors allowed. It correlates the the Qulaity/Phred score given to each base - this score is the probability the base is incorrect.  https://www.drive5.com/usearch/manual/exp_errs.html default is 2, but this number can be lowered for more aggressive filtering 
 ``` bash
   for f in 3-*.fastq; do
@@ -167,7 +167,7 @@ for f in 4-*.fasta; do
 done
 ```
 ---
-### Dereplicate at sample level and relabel with sample_n
+### $${\color{lightgreen}Dereplicate \space at \space sample \space level \space and \space relabel \space with \space sample \space name}$$
 This removes identical sequences within a sample
 ``` bash
  for f in 4-*.fasta; do
@@ -193,22 +193,20 @@ for f in 5-*.dfa; do
 done
 ```
 ---
-### Cat all fasta files
+### $${\color{lightgreen}Cat \space all \space fasta \space files}$$
 combine all files into one fasta file
 ``` bash
 cat 5-*.dfa > all.fasta
 ```
 ---
-### Remove unneeded files.
+### $${\color{lightgreen}Remove \space unneeded \space files}$$
 ``` bash
 rm 2-*.fastq 3-*.fastq 4-*.fasta 5-*.dfa
 ```
 ---
-### Dereplication of the fasta file.
- removes identical sequences 
-
-**derep.uc** is a way of mapping which sequences goes to which sample and how many times
- ``` bash 
+### $${\color{lightgreen}Dereplication \space of \space the \space fasta \space file}$$
+ removes identical sequences. derep.uc is a way of mapping which sequences goes to which sample and how many times
+ ```bash 
  $VSEARCH --derep_fulllength all.fasta \
      --threads $THREADS \
      --minuniquesize 2 \
@@ -219,8 +217,8 @@ rm 2-*.fastq 3-*.fastq 4-*.fasta 5-*.dfa
     --output derep.fasta
 ```
 ---
-### Clustering at 97% similarity.
-De Novo clustering of  sequences with 97% similarity as default (similarity level can be adjusted).  See Rognes et. al (2016) for more in depth explanation
+### $${\color{lightgreen}Clustering \space based \space on \space similarity}$$
+De Novo clustering of sequences with 97% similarity as default (similarity level can be adjusted). See Rognes et. al (2016) for more in depth explanation
  ```bash
  $VSEARCH --cluster_size derep.fasta \
      --threads $THREADS \
@@ -232,7 +230,7 @@ De Novo clustering of  sequences with 97% similarity as default (similarity leve
      --centroids centroids.fasta
 ```
 ---
-### Sort centroids and remove singletons.
+### $${\color{lightgreen}Sort \space centroids \space and \space remove \space singletons}$$
 This sorts the sequences by abundance and removes the sequences found only once
  ```bash
  $VSEARCH --sortbysize centroids.fasta \
@@ -244,7 +242,7 @@ This sorts the sequences by abundance and removes the sequences found only once
      --output sorted.fasta
 ```
 ---
-### denovo chimera detection.
+### $${\color{lightgreen}Denovo \space chimera \space detection}$$
 Looks for and removes chimeras formed from clustering
 ``` bash
 $VSEARCH --uchime_denovo sorted.fasta \
@@ -255,7 +253,7 @@ $VSEARCH --uchime_denovo sorted.fasta \
      --nonchimeras denovo.nonchimeras.fasta
 ```
 ---
-### Reference chimera detection against SILVA138.
+### $${\color{lightgreen}Reference \space chimera \space detection \space against \space SILVA138}$$
 Blasts sequences against SILVA138 database. Removes chimeras
  ``` bash
  $VSEARCH --uchime_ref denovo.nonchimeras.fasta \
@@ -269,7 +267,7 @@ Blasts sequences against SILVA138 database. Removes chimeras
      --nonchimeras nonchimeras.fasta
 ```
 ---
-### Relabel OTUs.
+### $${\color{lightgreen}Relabel \space OTUs}$$
  ``` bash
  $VSEARCH --fastx_filter nonchimeras.fasta \
      --threads $THREADS \
@@ -279,8 +277,7 @@ Blasts sequences against SILVA138 database. Removes chimeras
      --fastaout XXX_otus.fasta
 ```
  ---
-### map sequences to OTU
-Change "XX" to unique file name for dataset
+### $${\color{lightgreen}map \space sequences \space to \space OTU}$$
  ``` bash
  $VSEARCH --usearch_global all.fasta \
      --threads $THREADS \
@@ -295,12 +292,12 @@ Change "XX" to unique file name for dataset
      --otutabout XXX.otutab.txt 
 ```
 ---
-#### Sort OTU table numerically 
+### $${\color{lightgreen}Sort \space OTU \space table \space numerically}$$ 
  ``` bash
  sort -k1.5n XXX.otutab.txt > XXX.otutab.sorted.txt
  ```
 ---
-## LULU cleanup
+## $${\color{orange}LULU \space cleanup}$$
 make blast db in terminal using last .fasta file from "relabel OTUs" step
 ``` bash
 makeblastdb -in XXX_otus.fasta -dbtype nucl
@@ -325,13 +322,13 @@ write.table(data.frame("OTU"=rownames(lulus),lulus),"XXX_table_curated.tsv", row
 
   curated_result$curated_table 
 ```
-### Remove sequences from fasta file that got removed using LULU
+### $${\color{lightgreen}Remove \space sequences \space from \space fasta \space file \space that \space got \space removed \space using \space LULU}$$
 (in Python)
 ``` bash
 python filter_seq_by_OTUtable.py XXX_otus.fasta XXX_table_curated.tsv > XXX_OTUs_curated.fasta
 ```
 ________________________________________________________________________
-## CREST Classifying
+## $${\color{orange}CREST \space Classifying}$$
 Using CREST4 which is installed locally on my computer:
 activateconda environment to run CREST
 ``` bash
@@ -344,7 +341,7 @@ crest4 -f XXX_OTUs_curated.fasta
 Rename the OTU files to have unique name for datasets you are working on
 "**XXX_OTU_table.csv "
 _______________________________________________________________________
-## Merge assignments and OTUs
+## $${\color{orange}Merge \space  assignments \space  and \space  OTUs}$$
 In excel or spreadsheets, merge the OTU table with the assignments from the CREST classifying. Save as your OTU table is .csv format
 
 Carefully look through this for errors. 
